@@ -76,7 +76,7 @@ Ssl::Bio::Create(const int fd, Security::Io::Type type)
         BIO_meth_set_create(SquidMethods, squid_bio_create);
         BIO_meth_set_destroy(SquidMethods, squid_bio_destroy);
     }
-    const BIO_METHOD *useMethod = SquidMethods;
+    BIO_METHOD *useMethod = SquidMethods;
 #else
     BIO_METHOD *useMethod = &SquidMethods;
 #endif
@@ -706,13 +706,7 @@ applyTlsDetailsToSSL(SSL *ssl, Security::TlsDetails::Pointer const &details, Ssl
             cbytes[0] = (cipherId >> 8) & 0xFF;
             cbytes[1] = cipherId & 0xFF;
             cbytes[2] = 0;
-#if HAVE_LIBSSL_SSL_CIPHER_FIND
-            const SSL_CIPHER *c = SSL_CIPHER_find(ssl, cbytes);
-#else
-            const SSL_METHOD *method = SSLv23_method();
-            const SSL_CIPHER *c = method->get_cipher_by_char(cbytes);
-#endif
-            if (c != NULL) {
+            if (auto c = SSL_CIPHER_find(ssl, cbytes)) {
                 if (!strCiphers.isEmpty())
                     strCiphers.append(":");
                 strCiphers.append(SSL_CIPHER_get_name(c));
